@@ -26,33 +26,33 @@ function Profile() {
   const [editRegion, setEditRegion] = useState('')
   const [editNotes, setEditNotes] = useState('')
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     if (!email.trim() || !password.trim()) {
       setError('Бүх талбарыг бөглөнө үү!')
       return
     }
-    const result = login(email.trim(), password)
+    const result = await login(email.trim(), password)
     if (!result.success) setError(result.error)
   }
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault()
     setError('')
     if (!email.trim() || !username.trim() || !password.trim()) {
       setError('Бүх талбарыг бөглөнө үү!')
       return
     }
-    if (password.length < 4) {
-      setError('Нууц үг хамгийн багадаа 4 тэмдэгттэй байх ёстой!')
+    if (password.length < 6) {
+      setError('Нууц үг хамгийн багадаа 6 тэмдэгттэй байх ёстой!')
       return
     }
     if (password !== confirmPw) {
       setError('Нууц үг таарахгүй байна!')
       return
     }
-    const result = register(email.trim(), username.trim(), password)
+    const result = await register(email.trim(), username.trim(), password)
     if (!result.success) setError(result.error)
     else setSuccess('Амжилттай бүртгэгдлээ! 🎉')
   }

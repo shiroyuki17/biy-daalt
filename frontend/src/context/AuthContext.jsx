@@ -1,50 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { authAPI } from '../api'
 
 const AuthContext = createContext(null)
 
-// localStorage-д хэрэглэгчдийн мэдээлэл хадгална
-const USERS_KEY = 'lol_users'
-const CURRENT_USER_KEY = 'lol_current_user'
+// LoL-д хамаарах локал мэдээлэл (champion, item) localStorage-д хадгалах
+const LOL_PREFS_KEY = 'lol_prefs'
 
-function getUsers() {
+function getLolPrefs(userId) {
   try {
-    return JSON.parse(localStorage.getItem(USERS_KEY)) || {}
-  } catch { return {} }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users))
-}
-
-function getCurrentUser() {
-  try {
-    const email = localStorage.getItem(CURRENT_USER_KEY)
-    if (!email) return null
-    const users = getUsers()
-    return users[email] || null
-  } catch { return null }
-}
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const saved = getCurrentUser()
-    if (saved) setUser(saved)
-    setLoading(false)
-  }, [])
-
-  const register = (email, username, password) => {
-    const users = getUsers()
-    if (users[email]) {
-      return { success: false, error: 'Энэ имэйл хаяг бүртгэлтэй байна!' }
-    }
-    const newUser = {
-      email,
-      username,
-      password,
-      createdAt: new Date().toISOString(),
+    const all = JSON.parse(localStorage.getItem(LOL_PREFS_KEY)) || {}
+    return all[userId] || {
       favoriteChampions: [],
       favoriteItems: [],
       mainRole: '',
@@ -53,40 +18,87 @@ export function AuthProvider({ children }) {
       icon: Math.floor(Math.random() * 28) + 1,
       notes: ''
     }
-    users[email] = newUser
-    saveUsers(users)
-    localStorage.setItem(CURRENT_USER_KEY, email)
-    setUser(newUser)
-    return { success: true }
+  } catch { return {} }
+}
+
+function saveLolPrefs(userId, prefs) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LOL_PREFS_KEY)) || {}
+    all[userId] = prefs
+    localStorage.setItem(LOL_PREFS_KEY, JSON.stringify(all))
+  } catch {}
+}
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  // Апп ачаалахад token байвал profile авна
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token')
+    if (!token) { setLoading(false); return }
+
+    authAPI.getProfile()
+      .then(data => {
+        const prefs = getLolPrefs(data.user.id)
+        setUser({ ...data.user, ...prefs })
+      })
+      .catch(() => {
+        localStorage.removeItem('auth_token')
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  // ─── REGISTER ───────────────────────────────────────
+  const register = async (email, username, password) => {
+    try {
+      await authAPI.register(username, email, password)
+      // Бүртгүүлсний дараа шууд нэвтэрнэ
+      return await login(email, password)
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
   }
 
-  const login = (email, password) => {
-    const users = getUsers()
-    const u = users[email]
-    if (!u) return { success: false, error: 'Хэрэглэгч олдсонгүй!' }
-    if (u.password !== password) return { success: false, error: 'Нууц үг буруу байна!' }
-    localStorage.setItem(CURRENT_USER_KEY, email)
-    setUser(u)
-    return { success: true }
+  // ─── LOGIN ──────────────────────────────────────────
+  const login = async (email, password) => {
+    try {
+      const data = await authAPI.login(email, password)
+      localStorage.setItem('auth_token', data.token)
+      const prefs = getLolPrefs(data.user.id)
+      setUser({ ...data.user, ...prefs })
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
   }
 
+  // ─── LOGOUT ─────────────────────────────────────────
   const logout = () => {
-    localStorage.removeItem(CURRENT_USER_KEY)
+    localStorage.removeItem('auth_token')
     setUser(null)
   }
 
+  // ─── UPDATE LOCAL PREFS (LoL мэдээлэл) ─────────────
   const updateUser = (updates) => {
     if (!user) return
-    const users = getUsers()
     const updated = { ...user, ...updates }
-    users[user.email] = updated
-    saveUsers(users)
+    saveLolPrefs(user.id, {
+      favoriteChampions: updated.favoriteChampions,
+      favoriteItems:     updated.favoriteItems,
+      mainRole:          updated.mainRole,
+      rank:              updated.rank,
+      region:            updated.region,
+      icon:              updated.icon,
+      notes:             updated.notes
+    })
     setUser(updated)
   }
 
+  // ─── CHAMPION FAVORITES ─────────────────────────────
   const toggleFavoriteChampion = (champName) => {
     if (!user) return false
-    const favs = [...user.favoriteChampions]
+    const favs = [...(user.favoriteChampions || [])]
     const idx = favs.indexOf(champName)
     if (idx > -1) favs.splice(idx, 1)
     else favs.push(champName)
@@ -94,9 +106,10 @@ export function AuthProvider({ children }) {
     return true
   }
 
+  // ─── ITEM FAVORITES ─────────────────────────────────
   const toggleFavoriteItem = (itemName) => {
     if (!user) return false
-    const favs = [...user.favoriteItems]
+    const favs = [...(user.favoriteItems || [])]
     const idx = favs.indexOf(itemName)
     if (idx > -1) favs.splice(idx, 1)
     else favs.push(itemName)
@@ -104,13 +117,11 @@ export function AuthProvider({ children }) {
     return true
   }
 
-  const isFavoriteChampion = (champName) => {
-    return user?.favoriteChampions?.includes(champName) || false
-  }
+  const isFavoriteChampion = (champName) =>
+    user?.favoriteChampions?.includes(champName) || false
 
-  const isFavoriteItem = (itemName) => {
-    return user?.favoriteItems?.includes(itemName) || false
-  }
+  const isFavoriteItem = (itemName) =>
+    user?.favoriteItems?.includes(itemName) || false
 
   return (
     <AuthContext.Provider value={{
