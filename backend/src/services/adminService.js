@@ -4,6 +4,7 @@ const logger = require('../utils/logger');
 
 const getAllUsers = async () => {
   return await db.user.findMany({
+    where: { isDeleted: false },
     select: {
       id: true,
       username: true,
@@ -24,7 +25,7 @@ const updateUserRole = async (id, role) => {
   const user = await db.user.findUnique({
     where: { id }
   });
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw new AppError('User not found.', 404);
   }
 
@@ -47,15 +48,16 @@ const deleteUser = async (id) => {
   const user = await db.user.findUnique({
     where: { id }
   });
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw new AppError('User not found.', 404);
   }
 
-  await db.user.delete({
-    where: { id }
+  await db.user.update({
+    where: { id },
+    data: { isDeleted: true }
   });
 
-  logger.info(`User deleted: ID ${id}`);
+  logger.info(`User soft-deleted: ID ${id}`);
   return { message: 'User deleted successfully.' };
 };
 

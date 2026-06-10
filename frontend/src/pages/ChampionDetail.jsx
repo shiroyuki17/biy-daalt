@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+﻿import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import champions, { getChampionImageUrl, roleIcons, getDifficultyColor } from '../data/champions'
 import { getChampionDetails } from '../data/championDetails'
@@ -51,14 +51,47 @@ function ChampionDetail() {
   const { user, toggleFavoriteChampion, isFavoriteChampion } = useAuth()
   const [details, setDetails] = useState(null)
   const [champion, setChampion] = useState(null)
+  const [dbSkills, setDbSkills] = useState([])
   const { items, runes, spells, loading: dataLoading } = useGameData()
 
   useEffect(() => {
-    const champ = champions.find(c => c.name === championName)
-    if (champ) {
+    const loadChampion = async () => {
+      // Ð›Ð¾ÐºÐ°Ð» Ñ„Ð°Ð¹Ð»Ð°Ð°Ñ Ò¯Ð½Ð´ÑÑÐ½ Ð¼ÑÐ´ÑÑÐ»Ð»Ð¸Ð¹Ð³ ÑÑ…Ð»ÑÑÐ´ Ð°Ð²Ð½Ð° (fallback)
+      let champ = champions.find(c => c.name === championName)
+      let defaultDetails = getChampionDetails(championName)
+      let skillsData = []
+
+      try {
+        // Backend (MySQL)-Ð°Ð°Ñ Ñ‚Ð°Ñ‚Ð°Ñ…
+        const { gameContentAPI } = await import('../api')
+        const res = await gameContentAPI.getChampions()
+        if (res.champions) {
+          const dbChamp = res.champions.find(c => c.name.toLowerCase() === championName.toLowerCase())
+          if (dbChamp) {
+            // Detailed fetch to include skills
+            const detailRes = await gameContentAPI.getChampionById(dbChamp.id)
+            if (detailRes.success && detailRes.champion) {
+              const champData = detailRes.champion
+              champ = { ...champ, ...champData }
+              if (champData.skills) {
+                skillsData = champData.skills
+              }
+              if (champData.guideData) {
+                defaultDetails = { ...defaultDetails, ...champData.guideData }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch detailed champion from DB:', err)
+      }
+
       setChampion(champ)
-      setDetails(getChampionDetails(championName))
+      setDetails(defaultDetails)
+      setDbSkills(skillsData)
     }
+
+    loadChampion()
   }, [championName])
 
   const handleFav = () => {
@@ -69,7 +102,7 @@ function ChampionDetail() {
   if (!champion || !details || dataLoading) {
     return (
       <div className="cd-page">
-        <button className="cd-back" onClick={() => navigate('/champions')}>← Champions</button>
+        <button className="cd-back" onClick={() => navigate('/champions')}>â† Champions</button>
         <div className="cd-loading">
           <div className="cd-loading-spinner"></div>
           <p>Loading Champion Data...</p>
@@ -105,7 +138,7 @@ function ChampionDetail() {
               <div className="cd-name-row">
                 <h1 className="cd-name">{champion.name}</h1>
                 <button className={`cd-fav-btn ${isFavoriteChampion(champion.name) ? 'fav-active' : ''}`} onClick={handleFav}>
-                  {isFavoriteChampion(champion.name) ? '❤️' : '🤍'}
+                  {isFavoriteChampion(champion.name) ? 'â¤ï¸' : 'ðŸ¤'}
                 </button>
               </div>
               <p className="cd-title">{champion.title}</p>
@@ -117,7 +150,7 @@ function ChampionDetail() {
                   <span className="diff-dot" style={{ background: getDifficultyColor(champion.difficulty) }}></span>
                   {champion.difficulty}
                 </span>
-                <span className="cd-lane-badge">📍 {details.lane}</span>
+                <span className="cd-lane-badge">ðŸ“ {details.lane}</span>
               </div>
             </div>
           </div>
@@ -149,13 +182,13 @@ function ChampionDetail() {
       {/* Builds Section */}
       <div className="cd-section">
         <div className="cd-section-header">
-          <h2>📋 Recommended Builds</h2>
-          <span className="cd-section-sub">Patch 14.24 · {details.lane}</span>
+          <h2>ðŸ“‹ Recommended Builds</h2>
+          <span className="cd-section-sub">Patch 14.24 Â· {details.lane}</span>
         </div>
         <div className="cd-builds">
           {details.recommendedBuilds.map((b, i) => (
             <div key={i} className={`cd-build-card ${i === 0 ? 'cd-build-popular' : 'cd-build-best'}`}>
-              <div className="cd-build-badge">{i === 0 ? '🔥 Most Popular' : '👑 Highest WR'}</div>
+              <div className="cd-build-badge">{i === 0 ? 'ðŸ”¥ Most Popular' : 'ðŸ‘‘ Highest WR'}</div>
               <div className="cd-build-stats">
                 <div className="cd-build-wr">
                   <span className="cd-build-wr-val" style={{ color: getWinRateColor(b.winRate) }}>{b.winRate}</span>
@@ -178,7 +211,7 @@ function ChampionDetail() {
           {/* Spells */}
           <div className="cd-section">
             <div className="cd-section-header">
-              <h2>⚡ Summoner Spells</h2>
+              <h2>âš¡ Summoner Spells</h2>
             </div>
             <div className="cd-spells-row">
               {details.spells.map((s, i) => (
@@ -190,7 +223,7 @@ function ChampionDetail() {
           {/* Runes */}
           <div className="cd-section">
             <div className="cd-section-header">
-              <h2>🔮 Runes</h2>
+              <h2>ðŸ”® Runes</h2>
             </div>
             <div className="cd-runes-grid">
               <div className="cd-rune-tree cd-rune-primary">
@@ -220,7 +253,7 @@ function ChampionDetail() {
           {/* Ability Order */}
           <div className="cd-section">
             <div className="cd-section-header">
-              <h2>🎮 Ability Order</h2>
+              <h2>ðŸŽ® Ability Order</h2>
             </div>
             <div className="cd-abilities">
               {details.abilityOrder.map((ability, i) => (
@@ -229,7 +262,7 @@ function ChampionDetail() {
                   <span className="cd-ability-label">
                     {i === 0 ? 'MAX 1ST' : i === 1 ? 'MAX 2ND' : 'MAX 3RD'}
                   </span>
-                  {i < details.abilityOrder.length - 1 && <span className="cd-ability-arrow">›</span>}
+                  {i < details.abilityOrder.length - 1 && <span className="cd-ability-arrow">â€º</span>}
                 </div>
               ))}
             </div>
@@ -241,7 +274,7 @@ function ChampionDetail() {
           {/* Items */}
           <div className="cd-section">
             <div className="cd-section-header">
-              <h2>🗡️ Item Build</h2>
+              <h2>ðŸ—¡ï¸ Item Build</h2>
             </div>
             <div className="cd-items-groups">
               <div className="cd-item-group">
@@ -253,7 +286,7 @@ function ChampionDetail() {
                 <div className="cd-item-row">{details.items.early.map(i => <ItemDisplay key={i} name={i} itemsData={items} />)}</div>
               </div>
               <div className="cd-item-group cd-core-group">
-                <h4 className="cd-item-group-title"><span className="cd-group-dot core"></span>Core Build <span className="cd-core-badge">⭐ CORE</span></h4>
+                <h4 className="cd-item-group-title"><span className="cd-group-dot core"></span>Core Build <span className="cd-core-badge">â­ CORE</span></h4>
                 <div className="cd-item-row">{details.items.core.map(i => <ItemDisplay key={i} name={i} itemsData={items} />)}</div>
               </div>
               <div className="cd-item-group">
@@ -269,15 +302,46 @@ function ChampionDetail() {
         </div>
       </div>
 
+      {/* Abilities Section */}
+      <div className="cd-section" style={{ marginTop: '2rem' }}>
+        <div className="cd-section-header">
+          <h2>ðŸ”® Champion Abilities (Ð§Ð°Ð´Ð²Ð°Ñ€ÑƒÑƒÐ´)</h2>
+        </div>
+        <div className="cd-abilities-list" style={{ display: 'grid', gap: '1.5rem', marginTop: '1.5rem' }}>
+          {dbSkills.length > 0 ? (
+            dbSkills.map(s => (
+              <div key={s.id} className="cd-ability-card" style={{ background: 'var(--c-surface)', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid var(--c-primary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', display: 'flex', alignItems: 'center' }}>
+                    <span className={`lane-badge ${s.skillType}`} style={{ padding: '0.2rem 0.6rem', borderRadius: '4px', marginRight: '0.8rem', fontSize: '0.9rem', background: '#333', color: 'var(--c-primary)' }}>{s.skillType}</span>
+                    {s.name}
+                  </h3>
+                  {s.skillType !== 'Passive' && (
+                    <div style={{ fontSize: '0.85rem', color: '#888', display: 'flex', gap: '1rem' }}>
+                      {s.cooldown && <span>â³ CD: <strong style={{ color: '#ccc' }}>{s.cooldown}s</strong></span>}
+                      {s.manaCost && <span>ðŸ’§ Cost: <strong style={{ color: '#ccc' }}>{s.manaCost}</strong></span>}
+                      {s.damage && <span>ðŸ’¥ Dmg: <strong style={{ color: '#ccc' }}>{s.damage}</strong></span>}
+                    </div>
+                  )}
+                </div>
+                <p style={{ margin: 0, fontSize: '0.95rem', color: '#ccc', lineHeight: '1.5', whiteSpace: 'pre-line' }}>{s.description}</p>
+              </div>
+            ))
+          ) : (
+            <p style={{ color: '#888', fontStyle: 'italic', textAlign: 'center', margin: '2rem 0' }}>Ó¨Ð³Ó©Ð³Ð´Ð»Ð¸Ð¹Ð½ ÑÐ°Ð½Ð´ Ñ‡Ð°Ð´Ð²Ð°Ñ€ÑƒÑƒÐ´ Ð±Ò¯Ñ€Ñ‚Ð³ÑÐ³Ð´ÑÑÐ³Ò¯Ð¹ Ð±Ð°Ð¹Ð½Ð°.</p>
+          )}
+        </div>
+      </div>
+
       {/* Matchups */}
       <div className="cd-section cd-matchups-section">
         <div className="cd-section-header">
-          <h2>⚔️ Matchups Overview</h2>
+          <h2>âš”ï¸ Matchups Overview</h2>
         </div>
         <div className="cd-matchups-grid">
           <div className="cd-matchup-col cd-matchup-weak">
             <div className="cd-matchup-header">
-              <span className="cd-matchup-icon">🔴</span>
+              <span className="cd-matchup-icon">ðŸ”´</span>
               <h3>Weak Against</h3>
             </div>
             {details.matchups.weakAgainst.map(m => (
@@ -294,7 +358,7 @@ function ChampionDetail() {
           </div>
           <div className="cd-matchup-col cd-matchup-strong">
             <div className="cd-matchup-header">
-              <span className="cd-matchup-icon">🟢</span>
+              <span className="cd-matchup-icon">ðŸŸ¢</span>
               <h3>Strong Against</h3>
             </div>
             {details.matchups.strongAgainst.map(m => (
@@ -311,7 +375,7 @@ function ChampionDetail() {
           </div>
           <div className="cd-matchup-col cd-matchup-synergy">
             <div className="cd-matchup-header">
-              <span className="cd-matchup-icon">🔵</span>
+              <span className="cd-matchup-icon">ðŸ”µ</span>
               <h3>Best Synergy</h3>
             </div>
             {details.matchups.synergy.map(m => (

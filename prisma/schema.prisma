@@ -9,16 +9,19 @@ datasource db {
   provider = "mysql"
 }
 
+// ─── USER ────────────────────────────────────────────────────────────────────
 model User {
-  id            Int       @id @default(autoincrement())
-  username      String    @unique
-  email         String    @unique
-  password      String
-  role          Role      @default(USER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  guides        Guide[]
-  comments      Comment[]
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  email     String    @unique
+  password  String
+  role      Role      @default(USER)
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  guides    Guide[]
+  comments  Comment[]
 
   @@map("users")
 }
@@ -29,25 +32,119 @@ enum Role {
   USER
 }
 
+// ─── GAME ────────────────────────────────────────────────────────────────────
 model Game {
-  id          Int      @id @default(autoincrement())
-  title       String   @unique
+  id          Int        @id @default(autoincrement())
+  title       String     @unique
   genre       String
-  description String   @db.Text
+  description String     @db.Text
   image       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   guides      Guide[]
+  champions   Champion[]
+  items       Item[]
+  runes       Rune[]
+  spells      Spell[]
 
   @@map("games")
 }
 
+// ─── CHAMPION (Hero) ─────────────────────────────────────────────────────────
+model Champion {
+  id          Int      @id @default(autoincrement())
+  name        String
+  role        String   // Top, Jungle, Mid, Bot, Support
+  difficulty  String   // Easy, Medium, Hard
+  description String   @db.Text
+  imageUrl    String?
+  guideData   Json?    // Item Build, Runes, Matchups гэх мэт нарийвчилсан мэдээлэл
+  gameId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  skills      Skill[]
+
+  @@unique([name, gameId])
+  @@map("champions")
+}
+
+// ─── SKILL (Champion Abilities: Q, W, E, R) ─────────────────────────────────
+model Skill {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  damage      String?  // "80/120/160/200/240"
+  cooldown    String?  // "10/9/8/7/6"
+  manaCost    String?  // "50/55/60/65/70"
+  skillType   String   // Passive, Q, W, E, R
+  championId  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  champion    Champion @relation(fields: [championId], references: [id], onDelete: Cascade)
+
+  @@unique([name, championId])
+  @@map("skills")
+}
+
+// ─── ITEM ────────────────────────────────────────────────────────────────────
+model Item {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   // Starter, Basic, Epic, Legendary, Mythic
+  description String   @db.Text
+  price       Int      @default(0)
+  stats       String?  // "+50 AD, +20% Crit"
+  imageUrl    String?
+  gameId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([name, gameId])
+  @@map("items")
+}
+
+// ─── RUNE (Emblem) ───────────────────────────────────────────────────────────
+model Rune {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   // Keystone, Primary, Secondary
+  description String   @db.Text
+  imageUrl    String?
+  gameId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([name, gameId])
+  @@map("runes")
+}
+
+// ─── SPELL (Summoner Spell) ──────────────────────────────────────────────────
+model Spell {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  cooldown    Int      @default(0)  // секундээр
+  imageUrl    String?
+  gameId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([name, gameId])
+  @@map("spells")
+}
+
+// ─── GUIDE ───────────────────────────────────────────────────────────────────
 model Guide {
   id        Int       @id @default(autoincrement())
   title     String
   content   String    @db.Text
   gameId    Int
   userId    Int
+  isDeleted Boolean   @default(false) @map("is_deleted")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -57,6 +154,7 @@ model Guide {
   @@map("guides")
 }
 
+// ─── COMMENT ─────────────────────────────────────────────────────────────────
 model Comment {
   id        Int      @id @default(autoincrement())
   content   String   @db.Text

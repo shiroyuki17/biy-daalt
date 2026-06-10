@@ -13,6 +13,8 @@ exports.getProfile = async (req, res, next) => {
         username: true,
         email: true,
         role: true,
+        isDeleted: true,
+        lastLoginAt: true,
         createdAt: true,
         _count: {
           select: {
@@ -23,7 +25,7 @@ exports.getProfile = async (req, res, next) => {
       }
     });
 
-    if (!user) {
+    if (!user || user.isDeleted) {
       return next(new AppError('User not found.', 404));
     }
 
@@ -42,7 +44,7 @@ exports.getMyGuides = async (req, res, next) => {
     const userId = req.user.id;
 
     const guides = await db.guide.findMany({
-      where: { userId },
+      where: { userId, isDeleted: false },
       include: {
         game: { select: { title: true, genre: true } },
         _count: { select: { comments: true } }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import itemsFullData, { itemCategories } from '../data/itemsFullData'
 import { getChampionImageUrl } from '../data/champions'
@@ -6,8 +6,9 @@ import { useAuth } from '../context/AuthContext'
 
 const DD_VERSION = "14.8.1"
 
-function getItemImageUrl(id) {
-  return `https://ddragon.leagueoflegends.com/cdn/${DD_VERSION}/img/item/${id}.png`
+function getItemImageUrl(item) {
+  if (item.imageUrl) return item.imageUrl
+  return `https://ddragon.leagueoflegends.com/cdn/${DD_VERSION}/img/item/${item.id}.png`
 }
 
 function getCategoryIcon(cat) {
@@ -33,14 +34,54 @@ function Items() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
   const [selectedItem, setSelectedItem] = useState(null)
+  const [dbItems, setDbItems] = useState([])
+
+  useEffect(() => {
+    const fetchDbItems = async () => {
+      try {
+        const { gameContentAPI } = await import('../api')
+        const res = await gameContentAPI.getItems()
+        if (res.success && res.items) {
+          setDbItems(res.items)
+        }
+      } catch (err) {
+        console.error('Failed to load items from DB:', err)
+      }
+    }
+    fetchDbItems()
+  }, [])
+
+  const allItems = useMemo(() => {
+    const merged = [...itemsFullData]
+    dbItems.forEach(dbItem => {
+      const idx = merged.findIndex(i => i.name.toLowerCase() === dbItem.name.toLowerCase())
+      const formatted = {
+        id: dbItem.id,
+        name: dbItem.name,
+        category: dbItem.type || 'Basic',
+        price: dbItem.price || 0,
+        description: dbItem.description || '',
+        stats: dbItem.stats ? dbItem.stats.split(',').map(s => s.trim()) : [],
+        imageUrl: dbItem.imageUrl || null,
+        tags: [],
+        recommendedChampions: []
+      }
+      if (idx > -1) {
+        merged[idx] = { ...merged[idx], ...formatted, tags: merged[idx].tags, recommendedChampions: merged[idx].recommendedChampions }
+      } else {
+        merged.push(formatted)
+      }
+    })
+    return merged
+  }, [dbItems])
 
   const filtered = useMemo(() => {
-    return itemsFullData.filter(item => {
+    return allItems.filter(item => {
       const matchName = item.name.toLowerCase().includes(search.toLowerCase())
       const matchCat = category === 'All' || item.category === category
       return matchName && matchCat
     })
-  }, [search, category])
+  }, [search, category, allItems])
 
   const handleItemClick = (item) => {
     setSelectedItem(selectedItem?.name === item.name ? null : item)
@@ -104,7 +145,7 @@ function Items() {
             <div className="item-card-top">
               <div className="item-card-img-wrap" style={{ borderColor: getCategoryColor(item.category) }}>
                 <img
-                  src={getItemImageUrl(item.id)}
+                  src={getItemImageUrl(item)}
                   alt={item.name}
                   loading="lazy"
                   onError={(e) => { e.target.onerror = null; e.target.src = 'https://ddragon.leagueoflegends.com/cdn/14.24.1/img/item/3340.png' }}

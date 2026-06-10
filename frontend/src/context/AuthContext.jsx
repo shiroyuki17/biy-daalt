@@ -52,9 +52,12 @@ export function AuthProvider({ children }) {
   // ─── REGISTER ───────────────────────────────────────
   const register = async (email, username, password) => {
     try {
-      await authAPI.register(username, email, password)
+      const data = await authAPI.register(username, email, password)
       // Бүртгүүлсний дараа шууд нэвтэрнэ
-      return await login(email, password)
+      localStorage.setItem('auth_token', data.token)
+      const prefs = getLolPrefs(data.user.id)
+      setUser({ ...data.user, ...prefs })
+      return { success: true }
     } catch (err) {
       return { success: false, error: err.message }
     }

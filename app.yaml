@@ -1,0 +1,8 @@
+﻿runtime: nodejs20
+
+instance_class: F1
+
+env_variables:
+  NODE_ENV: "production"
+  # Ð¢ÑÐ¼Ð´ÑÐ³Ð»ÑÐ»: DATABASE_URL Ð±Ð¾Ð»Ð¾Ð½ JWT_SECRET Ð·ÑÑ€ÑÐ³ Ð½ÑƒÑƒÑ†Ð»Ð°Ð»Ñ‚Ð°Ð¹ Ñ…ÑƒÐ²ÑŒÑÐ°Ð³Ñ‡Ð´Ñ‹Ð³
+  # Google Cloud Console-Ð¾Ð¾Ñ ÑÑÐ²ÑÐ» Secret Manager Ð°ÑˆÐ¸Ð³Ð»Ð°Ð½ Ñ‚Ð¾Ñ…Ð¸Ñ€ÑƒÑƒÐ»Ð°Ñ… Ð½ÑŒ Ð·Ò¯Ð¹Ñ‚ÑÐ¹.

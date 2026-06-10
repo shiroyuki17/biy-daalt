@@ -14,6 +14,7 @@ const getAllGuides = async () => {
 
   logger.info('Cache miss for guides list, querying database');
   const guides = await db.guide.findMany({
+    where: { isDeleted: false },
     include: {
       user: { select: { username: true } },
       game: { select: { title: true } }
@@ -40,7 +41,7 @@ const getGuideById = async (id) => {
     }
   });
 
-  if (!guide) {
+  if (!guide || guide.isDeleted) {
     throw new AppError('Guide not found.', 404);
   }
 
@@ -75,7 +76,7 @@ const updateGuide = async (id, userId, userRole, dto) => {
   const guide = await db.guide.findUnique({
     where: { id }
   });
-  if (!guide) {
+  if (!guide || guide.isDeleted) {
     throw new AppError('Guide not found.', 404);
   }
 
@@ -127,8 +128,9 @@ const deleteGuide = async (id, userId, userRole) => {
     throw new AppError('Access denied. You do not have permission to delete this guide.', 403);
   }
 
-  await db.guide.delete({
-    where: { id }
+  await db.guide.update({
+    where: { id },
+    data: { isDeleted: true }
   });
 
   // Invalidate cache

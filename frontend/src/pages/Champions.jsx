@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import champions, { getChampionImageUrl, getDifficultyColor, roleIcons } from '../data/champions'
 import { useAuth } from '../context/AuthContext'
@@ -15,16 +15,55 @@ function Champions() {
   const [role, setRole] = useState('All')
   const [diff, setDiff] = useState('Any Difficulty')
   const [tag, setTag] = useState('All')
+  const [dbChampions, setDbChampions] = useState([])
+
+  useEffect(() => {
+    const fetchDbChampions = async () => {
+      try {
+        const { gameContentAPI } = await import('../api')
+        const res = await gameContentAPI.getChampions()
+        if (res.success && res.champions) {
+          setDbChampions(res.champions)
+        }
+      } catch (err) {
+        console.error('Failed to load champions from DB:', err)
+      }
+    }
+    fetchDbChampions()
+  }, [])
+
+  const allChampions = useMemo(() => {
+    const merged = [...champions]
+    dbChampions.forEach(dbC => {
+      const idx = merged.findIndex(c => c.name.toLowerCase() === dbC.name.toLowerCase())
+      const formatted = {
+        name: dbC.name,
+        title: dbC.description ? (dbC.description.length > 50 ? dbC.description.slice(0, 50) + '...' : dbC.description) : 'Champion from DB',
+        difficulty: dbC.difficulty || 'Medium',
+        roles: [dbC.role],
+        tags: [dbC.role],
+        imageUrl: dbC.imageUrl || null,
+        isFromDb: true,
+        id: dbC.id
+      }
+      if (idx > -1) {
+        merged[idx] = { ...merged[idx], ...formatted, tags: merged[idx].tags, roles: merged[idx].roles, title: merged[idx].title || formatted.title }
+      } else {
+        merged.push(formatted)
+      }
+    })
+    return merged
+  }, [dbChampions])
 
   const filtered = useMemo(() => {
-    return champions.filter(c => {
+    return allChampions.filter(c => {
       const matchName = c.name.toLowerCase().includes(search.toLowerCase())
       const matchRole = role === 'All' || c.roles.includes(role)
       const matchDiff = diff === 'Any Difficulty' || c.difficulty === diff
       const matchTag = tag === 'All' || c.tags.includes(tag)
       return matchName && matchRole && matchDiff && matchTag
     }).sort((a, b) => a.name.localeCompare(b.name))
-  }, [search, role, diff, tag])
+  }, [search, role, diff, tag, allChampions])
 
   const handleFav = (e, champName) => {
     e.stopPropagation()
@@ -109,7 +148,7 @@ function Champions() {
               ))}
             </div>
             <div className="champ-avatar">
-              <img src={getChampionImageUrl(champ.name)} alt={champ.name} loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://ddragon.leagueoflegends.com/cdn/14.24.1/img/profileicon/29.png' }} />
+              <img src={champ.imageUrl || getChampionImageUrl(champ.name)} alt={champ.name} loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://ddragon.leagueoflegends.com/cdn/14.24.1/img/profileicon/29.png' }} />
             </div>
             <h3 className="champ-name">{champ.name}</h3>
             <p className="champ-title">{champ.title}</p>

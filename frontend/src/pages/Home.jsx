@@ -72,6 +72,7 @@ function Home() {
   const [expandedTip, setExpandedTip] = useState(null)
   const navigate = useNavigate()
   const featuredChamps = champions.filter(c => featured.includes(c.name))
+  const heroChamps = featuredChamps.slice(0, 5)
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -97,23 +98,55 @@ function Home() {
             }} />
           ))}
         </div>
-        <h1 className="hero-title">
-          WIN MORE IN <span className="hero-highlight">LEAGUE OF LEGENDS</span>
-        </h1>
-        <p className="hero-subtitle">
-          Your all-in-one gaming companion that helps players of all skill levels improve and climb.
-        </p>
-        <form className="hero-search" onSubmit={handleSearch} id="hero-search-form">
-          <span className="search-icon">🔍</span>
-          <input
-            type="text"
-            placeholder="Search Champion..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input"
-            id="hero-search-input"
-          />
-        </form>
+        <div className="hero-inner">
+          <div className="hero-copy">
+            <div className="hero-kicker">Patch 14.24 / Champion Guide System</div>
+            <h1 className="hero-title">
+              WIN MORE IN <span className="hero-highlight">LEAGUE OF LEGENDS</span>
+            </h1>
+            <p className="hero-subtitle">
+              Your all-in-one gaming companion that helps players of all skill levels improve and climb.
+            </p>
+            <form className="hero-search" onSubmit={handleSearch} id="hero-search-form">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Search Champion..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="search-input"
+                id="hero-search-input"
+              />
+            </form>
+          </div>
+
+          <div className="hero-showcase" aria-hidden="true">
+            <div className="hero-orbit"></div>
+            {heroChamps.map((champ, index) => (
+              <div className={`hero-champ-card hero-champ-${index + 1}`} key={champ.name}>
+                <img src={getChampionImageUrl(champ.name)} alt="" loading="eager" />
+                <span>{champ.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="hero-track-strip" aria-hidden="true">
+          <div className="track-line">
+            <span>CHAMPIONS</span>
+            <span>RUNES</span>
+            <span>ITEM BUILDS</span>
+            <span>GUIDES</span>
+            <span>SKILLS</span>
+            <span>MATCHUPS</span>
+            <span>CHAMPIONS</span>
+            <span>RUNES</span>
+            <span>ITEM BUILDS</span>
+            <span>GUIDES</span>
+            <span>SKILLS</span>
+            <span>MATCHUPS</span>
+          </div>
+        </div>
       </div>
 
       <section className="featured-section">

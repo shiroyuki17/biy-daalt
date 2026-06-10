@@ -1,5 +1,5 @@
-// Backend API-тэй ярих нэгдсэн service
-// Vite proxy-оор /api/* → http://localhost:3000/api/*
+﻿// Backend API-Ñ‚ÑÐ¹ ÑÑ€Ð¸Ñ… Ð½ÑÐ³Ð´ÑÑÐ½ service
+// Vite proxy-Ð¾Ð¾Ñ€ /api/* â†’ http://localhost:3000/api/*
 
 const BASE = '/api'
 
@@ -24,12 +24,12 @@ async function request(method, path, body = null) {
   const data = await res.json()
 
   if (!res.ok) {
-    throw new Error(data.message || 'Алдаа гарлаа')
+    throw new Error(data.message || 'ÐÐ»Ð´Ð°Ð° Ð³Ð°Ñ€Ð»Ð°Ð°')
   }
   return data
 }
 
-// ─── AUTH ──────────────────────────────────────────────
+// â”€â”€â”€ AUTH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const authAPI = {
   register: (username, email, password) =>
     request('POST', '/auth/register', { username, email, password }),
@@ -44,7 +44,7 @@ export const authAPI = {
     request('GET', '/users/me/guides'),
 }
 
-// ─── GAMES ─────────────────────────────────────────────
+// â”€â”€â”€ GAMES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const gamesAPI = {
   getAll: () =>
     request('GET', '/games'),
@@ -62,7 +62,7 @@ export const gamesAPI = {
     request('DELETE', `/games/${id}`),
 }
 
-// ─── GUIDES ────────────────────────────────────────────
+// â”€â”€â”€ GUIDES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const guidesAPI = {
   getAll: () =>
     request('GET', '/guides'),
@@ -83,7 +83,7 @@ export const guidesAPI = {
     request('POST', `/guides/${guideId}/comments`, { content }),
 }
 
-// ─── ADMIN ─────────────────────────────────────────────
+// â”€â”€â”€ ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const adminAPI = {
   getAllUsers: () =>
     request('GET', '/admin/users'),
@@ -93,4 +93,38 @@ export const adminAPI = {
 
   deleteUser: (userId) =>
     request('DELETE', `/admin/users/${userId}`),
+}
+
+// â”€â”€â”€ GAME CONTENT (Champions, Items, Runes) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const gameContentAPI = {
+  getChampions: (gameId) =>
+    request('GET', `/champions${gameId ? `?gameId=${gameId}` : ''}`),
+  getChampionById: (id) => request('GET', `/champions/${id}`),
+  createChampion: (data) => request('POST', '/champions', data),
+  updateChampion: (id, data) => request('PUT', `/champions/${id}`, data),
+  deleteChampion: (id) => request('DELETE', `/champions/${id}`),
+
+  getSkills: (championId) =>
+    request('GET', `/skills${championId ? `?championId=${championId}` : ''}`),
+  createSkill: (data) => request('POST', '/skills', data),
+  updateSkill: (id, data) => request('PUT', `/skills/${id}`, data),
+  deleteSkill: (id) => request('DELETE', `/skills/${id}`),
+
+  getItems: (gameId) =>
+    request('GET', `/items${gameId ? `?gameId=${gameId}` : ''}`),
+  createItem: (data) => request('POST', '/items', data),
+  updateItem: (id, data) => request('PUT', `/items/${id}`, data),
+  deleteItem: (id) => request('DELETE', `/items/${id}`),
+
+  getRunes: (gameId) =>
+    request('GET', `/runes${gameId ? `?gameId=${gameId}` : ''}`),
+  createRune: (data) => request('POST', '/runes', data),
+  updateRune: (id, data) => request('PUT', `/runes/${id}`, data),
+  deleteRune: (id) => request('DELETE', `/runes/${id}`),
+
+  getSpells: (gameId) =>
+    request('GET', `/spells${gameId ? `?gameId=${gameId}` : ''}`),
+  createSpell: (data) => request('POST', '/spells', data),
+  updateSpell: (id, data) => request('PUT', `/spells/${id}`, data),
+  deleteSpell: (id) => request('DELETE', `/spells/${id}`),
 }

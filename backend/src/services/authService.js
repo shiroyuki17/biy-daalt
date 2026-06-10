@@ -37,12 +37,24 @@ const registerUser = async (dto) => {
     }
   });
 
-  logger.info(`User registered successfully: ${newUser.username} (${newUser.id})`);
-  return {
+  const token = generateToken({
     id: newUser.id,
     username: newUser.username,
     email: newUser.email,
     role: newUser.role
+  });
+
+  logger.info(`User registered successfully: ${newUser.username} (${newUser.id})`);
+  return {
+    token,
+    user: {
+      id: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+      role: newUser.role,
+      lastLoginAt: newUser.lastLoginAt,
+      createdAt: newUser.createdAt
+    }
   };
 };
 
@@ -52,7 +64,7 @@ const loginUser = async (dto) => {
     where: { email: dto.email }
   });
 
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw new AppError('Invalid email or password.', 401);
   }
 
@@ -62,23 +74,30 @@ const loginUser = async (dto) => {
     throw new AppError('Invalid email or password.', 401);
   }
 
-  // Generate token
-  const token = generateToken({
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    role: user.role
+  const loggedInUser = await db.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() }
   });
 
-  logger.info(`User logged in successfully: ${user.username} (${user.id})`);
+  // Generate token
+  const token = generateToken({
+    id: loggedInUser.id,
+    username: loggedInUser.username,
+    email: loggedInUser.email,
+    role: loggedInUser.role
+  });
+
+  logger.info(`User logged in successfully: ${loggedInUser.username} (${loggedInUser.id})`);
 
   return {
     token,
     user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role
+      id: loggedInUser.id,
+      username: loggedInUser.username,
+      email: loggedInUser.email,
+      role: loggedInUser.role,
+      lastLoginAt: loggedInUser.lastLoginAt,
+      createdAt: loggedInUser.createdAt
     }
   };
 };

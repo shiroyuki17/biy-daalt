@@ -7,11 +7,11 @@ exports.register = async (req, res, next) => {
     const dto = new RegisterDTO(req.body);
     validateRegister(dto);
 
-    const user = await authService.registerUser(dto);
+    const result = await authService.registerUser(dto);
     return res.status(201).json({
       success: true,
       message: 'User registered successfully.',
-      user
+      ...result
     });
   } catch (error) {
     next(error);

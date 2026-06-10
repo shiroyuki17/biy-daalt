@@ -16,6 +16,12 @@ const TierIcon = () => (
 const ItemsIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7h-4l-2-3H10L8 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M12 11v6"/><path d="M9 14h6"/></svg>
 )
+const WorkspaceIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+)
+const DatabaseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>
+)
 
 const navItems = [
   { path: '/', icon: <HomeIcon />, label: 'Home' },
@@ -23,6 +29,7 @@ const navItems = [
   { path: '/champions', icon: <ChampIcon />, label: 'Champions' },
   { path: '/items', icon: <ItemsIcon />, label: 'Items' },
   { path: '/tierlist', icon: <TierIcon />, label: 'Tier List' },
+  { path: '/database', icon: <DatabaseIcon />, label: 'Database' },
 ]
 
 function Sidebar() {
@@ -49,6 +56,18 @@ function Sidebar() {
             </NavLink>
           </li>
         ))}
+        {user && (user.role === 'ADMIN' || user.role === 'EDITOR') && (
+          <li>
+            <NavLink
+              to="/workspace"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              id="nav-workspace"
+              title="Workspace"
+            >
+              <span className="nav-icon"><WorkspaceIcon /></span>
+            </NavLink>
+          </li>
+        )}
       </ul>
       <div className="sidebar-footer">
         {user ? (

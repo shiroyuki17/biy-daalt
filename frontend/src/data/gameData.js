@@ -107,9 +107,9 @@ export const itemsData = {
   "Spear of Shojin": "3161",
   
   // Core Mage
-  "Luden's Companion": "6658",
+  "Luden's Companion": "6655",
   "Malignance": "3118",
-  "Liandry's Torment": "3151",
+  "Liandry's Torment": "6653",
   "Shadowflame": "4645",
   "Zhonya's Hourglass": "3157",
   "Rabadon's Deathcap": "3089",
