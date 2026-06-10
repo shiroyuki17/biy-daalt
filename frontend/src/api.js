@@ -20,11 +20,30 @@ async function request(method, path, body = null) {
   const opts = { method, headers }
   if (body) opts.body = JSON.stringify(body)
 
-  const res = await fetch(`${BASE}${path}`, opts)
-  const data = await res.json()
+  let res
+  try {
+    res = await fetch(`${BASE}${path}`, opts)
+  } catch (error) {
+    throw new Error('Backend server ажиллахгүй байна. Эхлээд backend-ээ асаана уу.')
+  }
+
+  const text = await res.text()
+  let data = {}
+
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch (error) {
+      throw new Error(
+        res.ok
+          ? 'Backend JSON биш хариу буцаалаа.'
+          : `Backend алдаа буцаалаа: ${res.status} ${res.statusText}`
+      )
+    }
+  }
 
   if (!res.ok) {
-    throw new Error(data.message || 'ÐÐ»Ð´Ð°Ð° Ð³Ð°Ñ€Ð»Ð°Ð°')
+    throw new Error(data.message || `Алдаа гарлаа (${res.status})`)
   }
   return data
 }
